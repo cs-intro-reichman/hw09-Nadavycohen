@@ -29,19 +29,27 @@ public class LanguageModel {
         this.windowLength = windowLength;
         randomGenerator = new Random();
         CharDataMap = new HashMap<String, List>();
-    }
+    } 
+ 
+    /** Builds a language model from the text in the given file (the corpus). */
+	public void train(String fileName) {
+        String fileString = "";
+        In input = new In(fileName);
+        fileString = input.readAll();
+        for (int i = 0; i + windowLength < fileString.length(); i++) {
+            String key = fileString.substring(i, i + windowLength);
+            List value = CharDataMap.get(key);
+            if (value != null) {
+                if (value.indexOf(fileString.charAt(i + windowLength)) != -1) {
+                    value.update(fileString.charAt(i + windowLength));
 
-    public void train(String fileName) {
-		In newReader = new In(fileName);
-
-        String text = newReader.readAll();
-
-        for (int i = 0; i < text.length() - windowLength ; ++i) {
-            String key = text.substring(i, i + windowLength);
-            if (CharDataMap.get(key) == null) {
+                } else {
+                    value.addFirst(fileString.charAt(i + windowLength));
+                }
+            } else {
                 CharDataMap.put(key, new List());
+                CharDataMap.get(key).addFirst(fileString.charAt(i + windowLength));
             }
-            CharDataMap.get(key).update(text.charAt(i + windowLength));
             calculateProbabilities(CharDataMap.get(key));
         }
 	}
@@ -49,33 +57,25 @@ public class LanguageModel {
     // Computes and sets the probabilities (p and cp fields) of all the
 	// characters in the given list. */
 	public void calculateProbabilities(List probs) {				
-		int totalCharCount = 0;
-
-        ListIterator lIterator = probs.listIterator(0);
-        while (lIterator != null && lIterator.hasNext()) {
-            totalCharCount += lIterator.next().count;
+        double num = 0;
+        double current = 0;
+        for (int i = 0; i < probs.getSize(); i++) {
+            num += probs.get(i).count;
         }
-
-        double cp = 0.0;
-        for (int i = 0; i < probs.getSize(); ++i) {
-            CharData currentCharData = probs.get(i);
-            currentCharData.p = (double)currentCharData.count / totalCharCount;
-            currentCharData.cp = (double)cp + currentCharData.p;
-            cp += currentCharData.p;
+        for (int i = 0; i < probs.getSize(); i++) {
+            probs.get(i).p = probs.get(i).count / num;
+            probs.get(i).cp = current + probs.get(i).p;
+            current = probs.get(i).cp;
         }
 	}
 
     // Returns a random character from the given probabilities list.
 	public char getRandomChar(List probs) {
-		double cpValue = randomGenerator.nextDouble();
-		CharData[] charDataArray = probs.toArray();
-		
-		for (CharData cd : charDataArray) {
-			if (cd.cp > cpValue) {
-				return cd.chr;
-			}
-		}
-		return ' ';
+        double close = randomGenerator.nextDouble();
+        for (int i = 0; i < probs.getSize(); i++) {
+            if (probs.get(i).cp >= close) {return probs.get(i).chr;}
+        }
+        return 0;
 	}
 
     /**
@@ -86,13 +86,13 @@ public class LanguageModel {
 	 * @return the generated text
 	 */
 	public String generate(String initialText, int textLength) {
-		StringBuilder strBuild = new StringBuilder();
-		strBuild.append(initialText);
-		while (strBuild.length() < textLength + initialText.length()) {
-			String key = strBuild.substring(strBuild.length() - windowLength);
-			strBuild.append(getRandomChar(CharDataMap.get(key)));
-		}
-		return strBuild.toString();
+        if (initialText.length() >= windowLength) {
+            for (int i = 0; i < textLength; i++) {
+                initialText += getRandomChar(
+                        CharDataMap.get(initialText.substring(initialText.length() - windowLength)));
+            }
+        }
+        return initialText;
 	}
 
     /** Returns a string representing the map of this language model. */
@@ -104,4 +104,8 @@ public class LanguageModel {
 		}
 		return str.toString();
 	}
+
+    public static void main(String[] args) {
+		// Your code goes here
     }
+}
