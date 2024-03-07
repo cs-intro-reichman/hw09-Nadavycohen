@@ -29,37 +29,29 @@ public class List {
 
     /** GIVE Adds a CharData object with the given character to the beginning of this list. */
     public void addFirst(char chr) {
-        first = new Node(new CharData(chr), first);
+        CharData CD = new CharData(chr);
+        Node NN = new Node(CD, first);
+        first = NN;
         size++;
     }
     
     /** GIVE Textual representation of this list. */
     public String toString() {
-        ListIterator lIterator = new ListIterator(first);
-
-        StringBuilder stringBuilder = new StringBuilder();
-
-        stringBuilder.append("(");
-        while (lIterator.hasNext()) {
-            stringBuilder.append(lIterator.next());
-            if (lIterator.hasNext()) {
-                stringBuilder.append(" ");
-            }
-		}
-		stringBuilder.append(")");
-        return stringBuilder.toString();
+        StringBuilder str = new StringBuilder("(");
+        for (Node current = first; current != null; current = current.next) {
+            str.append(current.cp.toString()).append(" ");
+        }
+        return str.toString().trim() + ")";
     }
 
     /** Returns the index of the first CharData object in this list
      *  that has the same chr value as the given char,
      *  or -1 if there is no such object in this list. */
     public int indexOf(char chr) {
-		ListIterator lIterator = new ListIterator(first);
-
-        for (int index = 0; lIterator.hasNext(); index++) {
-            if (lIterator.next().equals(chr)) {
-                return index;
-            }
+        Node current = first;
+        for (int i = 0; current != null; i++) {
+            if (current.cp.chr == chr) {return i;}
+            current = current.next;
         }
         return -1;
     }
@@ -68,13 +60,13 @@ public class List {
      *  increments its counter. Otherwise, adds a new CharData object with the
      *  given chr to the beginning of this list. */
     public void update(char chr) {
-        ListIterator lIterator = listIterator(0);
-        while (lIterator != null && lIterator.hasNext()) {
-            CharData current = lIterator.next();
-            if (current.equals(chr)) {
-                current.count++;
+        Node current = first;
+        while (current !=  null) {
+            if (current.cp.chr == chr) {
+                current.cp.count++;
                 return;
             }
+            current = current.next;
         }
         addFirst(chr);
     }
@@ -83,22 +75,17 @@ public class List {
      *  in this list, removes this CharData object from the list and returns
      *  true. Otherwise, returns false. */
     public boolean remove(char chr) {
-        if (first.cp.equals(chr)) {
-            first = first.next;
-            size--;
-            return true;
-        }
-
-        Node previous = first;
-        do {
-            Node current = previous.next;
-            if (current.cp.equals(chr)) {
-                previous.next = current.next;
-                size--;
+        Node current = first;
+        Node before = current;
+        while (current != null) {
+            if (current.cp.chr == chr) {
+                before.next = current.next;
+                current = null;
                 return true;
             }
-            previous = current;
-        } while (previous.next != null);
+            before = current;
+            current = current.next;
+        }
         return false;
     }
 
@@ -107,13 +94,10 @@ public class List {
      *  throws an IndexOutOfBoundsException. */
     public CharData get(int index) {
         Node current = first;
-        for (int i = 0; current != null; ++i) {
-            if (i == index) {
-                return current.cp;
-            }
-            current = current.next;
-        }
-        throw new IndexOutOfBoundsException();
+        if (index < size && index >= 0 ) {
+            for (int i = 0; i < index; i++) {current = current.next;}
+            return current.cp;
+        } else {throw new IndexOutOfBoundsException();}
     }
 
     /** Returns an array of CharData objects, containing all the CharData objects in this list. */
